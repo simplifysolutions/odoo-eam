@@ -6,7 +6,7 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models, _
+from openerp import api, fields, models, _
 
 
 class asset_asset(models.Model):

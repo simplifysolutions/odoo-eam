@@ -6,8 +6,8 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models
-from odoo.addons.asset.asset import STATE_COLOR_SELECTION
+from openerp import api, fields, models
+from openerp.addons.asset.asset import STATE_COLOR_SELECTION
 
 
 class asset_asset(models.Model):

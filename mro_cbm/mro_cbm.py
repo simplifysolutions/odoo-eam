@@ -7,7 +7,7 @@
 ##############################################################################
 
 import time
-from odoo import api, fields, models
+from openerp import api, fields, models
 
 
 class mro_gauge(models.Model):

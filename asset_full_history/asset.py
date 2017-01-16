@@ -6,7 +6,7 @@
 #
 ##############################################################################
 
-from odoo import models, fields
+from openerp import models, fields
 
 class asset_asset(models.Model):
     _inherit = 'asset.asset'

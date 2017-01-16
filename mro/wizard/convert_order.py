@@ -6,7 +6,7 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models, _
+from openerp import api, fields, models, _
 
 class mro_convert_order(models.TransientModel):
     _name = 'mro.convert.order'

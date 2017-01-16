@@ -6,7 +6,7 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models
+from openerp import api, fields, models
 
 class stock_location(models.Model):
     _inherit = "stock.location"

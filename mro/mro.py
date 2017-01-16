@@ -7,9 +7,10 @@
 ##############################################################################
 
 import time
-from odoo import api, fields, models, _
-from odoo import netsvc
-import odoo.addons.decimal_precision as dp
+from openerp import api, fields, models, _
+from openerp import netsvc
+from openerp.exceptions import Warning
+import openerp.addons.decimal_precision as dp
 
 
 class mro_order(models.Model):
@@ -21,11 +22,12 @@ class mro_order(models.Model):
     _inherit = ['mail.thread', 'ir.needaction_mixin']
 
     STATE_SELECTION = [
-        ('draft', 'DRAFT'),
-        ('released', 'WAITING PARTS'),
-        ('ready', 'READY TO MAINTENANCE'),
-        ('done', 'DONE'),
-        ('cancel', 'CANCELED')
+        ('draft', 'Draft'),
+        ('assigned', 'Assigned'),
+        ('released', 'Awaiting Parts'),
+        ('ready', 'Ready'),
+        ('done', 'Done'),
+        ('cancel', 'Cancelled')
     ]
 
     MAINTENANCE_TYPE_SELECTION = [
@@ -156,12 +158,21 @@ class mro_order(models.Model):
             order.write({'state':'released','procurement_group_id':group_id.id})
         return 0
 
+    @api.multi
+    def button_assign(self):
+        if not self.user_id:
+            raise Warning(_("You must add an assigned user"))
+        self.write({'state': 'assigned'})
+        return True
+
     def action_ready(self):
         self.write({'state': 'ready'})
         return True
 
     def action_done(self):
         for order in self:
+            if not order.parts_move_lines:
+                continue
             order.parts_move_lines.action_done()
         self.write({'state': 'done', 'date_execution': time.strftime('%Y-%m-%d %H:%M:%S')})
         return True
@@ -179,6 +190,7 @@ class mro_order(models.Model):
                 res = False
         return res
 
+    @api.multi
     def force_done(self):
         self.force_parts_reservation()
         wf_service = netsvc.LocalService("workflow")
@@ -186,6 +198,7 @@ class mro_order(models.Model):
             wf_service.trg_validate(self.env.user.id, 'mro.order', order.id, 'button_done', self.env.cr)
         return True
 
+    @api.multi
     def force_parts_reservation(self):
         for order in self:
             order.parts_ready_lines.force_assign()

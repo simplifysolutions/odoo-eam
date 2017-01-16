@@ -6,8 +6,8 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models
-from odoo import netsvc
+from openerp import api, fields, models
+from openerp import netsvc
 
 class mro_request_reject(models.TransientModel):
     _name = 'mro.request.reject'

@@ -8,7 +8,7 @@
 
 import time
 import calendar
-from odoo import api, fields, models
+from openerp import api, fields, models
 
 
 class mro_order(models.Model):

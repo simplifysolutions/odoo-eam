@@ -9,7 +9,7 @@
 import math
 import time
 import calendar
-from odoo import api, fields, models
+from openerp import api, fields, models
 
 
 class mro_pm_parameter(models.Model):

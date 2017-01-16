@@ -143,7 +143,12 @@
             <field name="arch" type="xml">
                 <form string="Maintenance Orders" version="7.0">
                     <header>
-                        <button name="button_confirm_order" states="draft" string="Confirm Maintenance" class="oe_highlight"/>
+                        <button name="button_assign"
+                            states="draft"
+                            type="object"
+                            string="Assign"
+                            class="oe_highlight"/>
+                        <button name="button_confirm_order" states="assigned" string="Confirm Maintenance" class="oe_highlight"/>
                         <button name="button_done" states="ready" string="Done" class="oe_highlight"/>
                         <button name="force_done" states="released" string="Done" class="oe_highlight" type="object"/>
                         <button name="force_parts_reservation" states="released" string="Force Reservation" type="object"/>
@@ -184,7 +189,7 @@
                                     <group string="Planned Parts" states="draft,released,done,parts_except,cancel">
                                         <field name="parts_lines" nolabel="1" context="{'default_categ_id': context.get('default_categ_id')}">
                                             <tree string="Planned Parts" editable="bottom">
-                                                <field name="parts_id" domain="[('categ_id','=','Parts')]" context="{'default_categ_id': context.get('default_categ_id')}"/>
+                                                <field name="parts_id"/>
                                                 <field name="parts_qty"/>
                                                 <field name="parts_uom" groups="product.group_uom"/>
                                                 <field name="name"/>
@@ -316,7 +321,7 @@
             <field name="mode">primary</field>
             <field name="inherit_id" ref="product.product_template_search_view"/>
             <field name="arch" type="xml">
-                <filter name="services" position="before">
+                <filter string="Services" position="before">
                     <filter string="Parts" name="parts" domain="[('categ_id','=','Parts')]" help="Parts your store in the inventory"/>
                 </filter>
             </field>

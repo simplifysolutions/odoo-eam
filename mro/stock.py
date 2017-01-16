@@ -6,15 +6,15 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models
+from openerp import api, fields, models
 
 class StockMove(models.Model):
     _inherit = 'stock.move'
 
-    @api.model
+    @api.multi
     def write(self, vals):
         res = super(StockMove, self).write(vals)
-        from odoo import workflow
+        from openerp import workflow
         if vals.get('state') == 'assigned':
             mro_obj = self.env['mro.order']
             order_ids = mro_obj.search([('procurement_group_id', 'in', [x.group_id.id for x in self])])

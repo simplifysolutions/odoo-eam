@@ -6,8 +6,8 @@
 #
 ##############################################################################
 
-from odoo import api, fields, models
-from odoo import tools
+from openerp import api, fields, models
+from openerp import tools
 
 STATE_COLOR_SELECTION = [
     ('0', 'Red'),
@@ -54,7 +54,7 @@ class asset_category(models.Model):
     _name = 'asset.category'
 
     name = fields.Char('Tag', required=True, translate=True)
-    asset_ids = fields.Many2many('asset.asset', id1='category_id', id2='asset_id', string='Assets')
+    asset_ids = fields.Many2many('asset.asset', column1='category_id', column2='asset_id', string='Assets')
 
 
 class asset_asset(models.Model):
@@ -77,7 +77,7 @@ class asset_asset(models.Model):
         # - OR ('team','=',team): add default columns that belongs team
         search_domain = []
         search_domain += ['|', ('team','=',team)]
-        search_domain += [('id', 'in', ids)]
+        search_domain += [('id', 'in', self._ids)]
         stage_ids = stage_obj._search(search_domain, order=order, access_rights_uid=access_rights_uid)
         result = stage_obj.name_get(access_rights_uid, stage_ids)
         # restore order of the search
@@ -128,7 +128,7 @@ class asset_asset(models.Model):
     image = fields.Binary("Image")
     image_small = fields.Binary("Small-sized image")
     image_medium = fields.Binary("Medium-sized image")
-    category_ids = fields.Many2many('asset.category', id1='asset_id', id2='category_id', string='Tags')
+    category_ids = fields.Many2many('asset.category', column1='asset_id', column2='category_id', string='Tags')
 
     _group_by_full = {
         'finance_state_id': _read_group_finance_state_ids,
