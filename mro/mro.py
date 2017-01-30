@@ -25,7 +25,7 @@ class mro_order(models.Model):
         ('draft', 'Draft'),
         ('assigned', 'Assigned'),
         ('released', 'Awaiting Parts'),
-        ('ready', 'Ready'),
+        ('open', 'Ready'),
         ('done', 'Done'),
         ('cancel', 'Cancelled')
     ]
@@ -38,7 +38,7 @@ class mro_order(models.Model):
     @api.multi
     def _track_subtype(self, init_values):
         self.ensure_one()
-        if 'state' in init_values and self.state == 'ready':
+        if 'state' in init_values and self.state == 'open':
             return 'mro.mt_order_confirmed'
         return super(mro_order, self)._track_subtype(init_values)
 
@@ -69,10 +69,9 @@ class mro_order(models.Model):
     description = fields.Char('Description', size=64, translate=True, required=True, readonly=True, states={'draft': [('readonly', False)]})
     asset_id = fields.Many2one('asset.asset', 'Asset', required=True, readonly=True, states={'draft': [('readonly', False)]})
     date_planned = fields.Datetime('Planned Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
-    date_scheduled = fields.Datetime('Scheduled Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)],'released':[('readonly',False)],'ready':[('readonly',False)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
+    date_scheduled = fields.Datetime('Scheduled Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)],'released':[('readonly',False)],'open':[('readonly',False)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
     date_execution = fields.Datetime('Execution Date', required=True, states={'done':[('readonly',True)],'cancel':[('readonly',True)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
-    parts_lines = fields.One2many('mro.order.parts.line', 'maintenance_id', 'Planned parts',
-        readonly=True, states={'draft':[('readonly',False)]})
+    parts_lines = fields.One2many('mro.order.parts.line', 'maintenance_id', 'Planned parts')
     parts_ready_lines = fields.One2many('stock.move', compute='_get_available_parts')
     parts_move_lines = fields.One2many('stock.move', compute='_get_available_parts')
     parts_moved_lines = fields.One2many('stock.move', compute='_get_available_parts')
@@ -135,27 +134,48 @@ class mro_order(models.Model):
                 if any(states) or len(states) == 0: res = False
         return res
 
-    def action_confirm(self):        
+    def procure_parts(self, group_id=False):
         procurement_obj = self.env['procurement.order']
+        proc_ids = []
+        group_id = group_id or \
+                self.env['procurement.group'].create({
+                    'name': self.name,
+                    })
+        for line in self.parts_lines:
+            if line.procurement_id:
+                continue
+            vals = {
+                'name': self.name,
+                'origin': self.name,
+                'company_id': self.company_id.id,
+                'group_id': group_id.id,
+                'date_planned': self.date_planned,
+                'product_id': line.parts_id.id,
+                'product_qty': line.parts_qty,
+                'product_uom': line.parts_uom.id,
+                'location_id': self.asset_id.property_stock_asset.id
+                }
+            proc_id = procurement_obj.create(vals)
+            proc_ids.append(proc_id)
+            line.write({'procurement_id': proc_id.id})
+        procurement_obj.run(proc_ids)
+        return group_id
+
+    @api.multi
+    def action_procure(self):
         for order in self:
-            proc_ids = []
-            group_id = self.env['procurement.group'].create({'name': order.name})
-            for line in order.parts_lines:
-                vals = {
-                    'name': order.name,
-                    'origin': order.name,
-                    'company_id': order.company_id.id,
-                    'group_id': group_id.id,
-                    'date_planned': order.date_planned,
-                    'product_id': line.parts_id.id,
-                    'product_qty': line.parts_qty,
-                    'product_uom': line.parts_uom.id,
-                    'location_id': order.asset_id.property_stock_asset.id
-                    }
-                proc_id = procurement_obj.create(vals)
-                proc_ids.append(proc_id)
-            procurement_obj.run(proc_ids)
-            order.write({'state':'released','procurement_group_id':group_id.id})
+            procurement_group_id = self.procure_parts(
+                    group_id=order.procurement_group_id or False)
+            if not order.procurement_group_id:
+                order.write({
+                    'procurement_group_id': procurement_group_id.id,
+                    })
+        return True
+
+    def action_confirm(self):
+        for order in self:
+            order.action_procure()
+            order.write({ 'state': 'released'})
         return 0
 
     @api.multi
@@ -166,11 +186,12 @@ class mro_order(models.Model):
         return True
 
     def action_ready(self):
-        self.write({'state': 'ready'})
+        self.write({'state': 'open'})
         return True
 
     def action_done(self):
         for order in self:
+            order.action_procure()
             if not order.parts_move_lines:
                 continue
             order.parts_move_lines.action_done()
@@ -218,7 +239,7 @@ class mro_order(models.Model):
                 if order.state == 'draft':
                     vals['date_planned'] = vals['date_execution']
                     vals['date_scheduled'] = vals['date_execution']
-                elif order.state in ('released','ready'):
+                elif order.state in ('released','open'):
                     vals['date_scheduled'] = vals['date_execution']
                 else: del vals['date_execution']
         return super(mro_order, self).write(vals)
@@ -230,9 +251,15 @@ class mro_order_parts_line(models.Model):
 
     name = fields.Char('Description', size=64)
     parts_id = fields.Many2one('product.product', 'Parts', required=True)
-    parts_qty = fields.Float('Quantity', digits_compute=dp.get_precision('Product Unit of Measure'), required=True, default=1.0)
-    parts_uom = fields.Many2one('product.uom', 'Unit of Measure', required=True)
-    maintenance_id = fields.Many2one('mro.order', 'Maintenance Order', select=True)
+    parts_qty = fields.Float('Quantity',
+            digits_compute=dp.get_precision('Product Unit of Measure'),
+            required=True, default=1.0)
+    parts_uom = fields.Many2one('product.uom', 'Unit of Measure',required=True)
+    maintenance_id = fields.Many2one('mro.order', 'Maintenance Order',
+            select=True)
+    procurement_id = fields.Many2one('procurement.order', 'Procurement Order',
+            select=True)
+    state = fields.Selection(related='procurement_id.state')
 
     @api.onchange('parts_id')
     def onchange_parts(self):

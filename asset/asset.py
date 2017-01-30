@@ -139,12 +139,12 @@ class asset_asset(models.Model):
 
     @api.model
     def create(self, vals):
-        tools.image_resize_images(vals)
+        # tools.image_resize_images(vals)
         return super(asset_asset, self).create(vals)
 
     @api.multi
     def write(self, vals):
-        tools.image_resize_images(vals)
+        # tools.image_resize_images(vals)
         return super(asset_asset, self).write(vals)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
