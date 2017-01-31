@@ -6,11 +6,13 @@
 #
 ##############################################################################
 
-import time
 from openerp import api, fields, models, _
 from openerp import netsvc
 from openerp.exceptions import Warning
 import openerp.addons.decimal_precision as dp
+from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT as OE_DTFORMAT
+
+from datetime import datetime, timedelta
 
 
 class mro_order(models.Model):
@@ -56,6 +58,14 @@ class mro_order(models.Model):
             order.parts_move_lines = available_line_ids
             order.parts_moved_lines = done_line_ids
 
+    @api.multi
+    def _get_planned_date(self):
+        dt = datetime.now() + timedelta(hours=1)
+        if dt.minute % 15 or dt.second:
+            dt = dt + timedelta(minutes=15-dt.minute % 15,
+                                       seconds=-(dt.second % 60))
+        return dt.strftime(OE_DTFORMAT)
+
     name = fields.Char('Reference', size=64)
     origin = fields.Char('Source Document', size=64, readonly=True, states={'draft': [('readonly', False)]},
         help="Reference of the document that generated this maintenance order.")
@@ -68,9 +78,9 @@ class mro_order(models.Model):
     task_id = fields.Many2one('mro.task', 'Task', readonly=True, states={'draft': [('readonly', False)]})
     description = fields.Char('Description', size=64, translate=True, required=True, readonly=True, states={'draft': [('readonly', False)]})
     asset_id = fields.Many2one('asset.asset', 'Asset', required=True, readonly=True, states={'draft': [('readonly', False)]})
-    date_planned = fields.Datetime('Planned Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
-    date_scheduled = fields.Datetime('Scheduled Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)],'released':[('readonly',False)],'open':[('readonly',False)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
-    date_execution = fields.Datetime('Execution Date', required=True, states={'done':[('readonly',True)],'cancel':[('readonly',True)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
+    date_planned = fields.Datetime('Planned Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)]}, default=_get_planned_date)
+    date_scheduled = fields.Datetime('Scheduled Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)],'released':[('readonly',False)],'open':[('readonly',False)]})
+    date_execution = fields.Datetime('Execution Date', required=True, states={'done':[('readonly',True)],'cancel':[('readonly',True)]})
     parts_lines = fields.One2many('mro.order.parts.line', 'maintenance_id', 'Planned parts')
     parts_ready_lines = fields.One2many('stock.move', compute='_get_available_parts')
     parts_move_lines = fields.One2many('stock.move', compute='_get_available_parts')
@@ -195,7 +205,7 @@ class mro_order(models.Model):
             if not order.parts_move_lines:
                 continue
             order.parts_move_lines.action_done()
-        self.write({'state': 'done', 'date_execution': time.strftime('%Y-%m-%d %H:%M:%S')})
+        self.write({'state': 'done', 'date_execution': fields.Datetime.now()})
         return True
 
     def action_cancel(self):
@@ -362,6 +372,14 @@ class mro_request(models.Model):
             return 'mro.mt_request_rejected'
         return super(mro_request, self)._track_subtype(init_values)
 
+    @api.multi
+    def _get_planned_date(self):
+        dt = datetime.now() + timedelta(hours=1)
+        if dt.minute % 15 or dt.second:
+            dt = dt + timedelta(minutes=15-dt.minute % 15,
+                                       seconds=-(dt.second % 60))
+        return dt.strftime(OE_DTFORMAT)
+
     name = fields.Char('Reference', size=64)
     state = fields.Selection(STATE_SELECTION, 'Status', readonly=True,
         help="When the maintenance request is created the status is set to 'Draft'.\n\
@@ -373,8 +391,8 @@ class mro_request(models.Model):
     cause = fields.Char('Cause', size=64, translate=True, required=True, readonly=True, states={'draft': [('readonly', False)]})
     description = fields.Text('Description', readonly=True, states={'draft': [('readonly', False)]})
     reject_reason = fields.Text('Reject Reason', readonly=True)
-    requested_date = fields.Datetime('Requested Date', required=True, select=1, readonly=True, states={'draft': [('readonly', False)]}, help="Date requested by the customer for maintenance.", default=time.strftime('%Y-%m-%d %H:%M:%S'))
-    execution_date = fields.Datetime('Execution Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)],'claim':[('readonly',False)]}, default=time.strftime('%Y-%m-%d %H:%M:%S'))
+    requested_date = fields.Datetime('Requested Date', required=True, select=1, readonly=True, states={'draft': [('readonly', False)]}, help="Date requested by the customer for maintenance.", default=_get_planned_date)
+    execution_date = fields.Datetime('Execution Date', required=True, select=1, readonly=True, states={'draft':[('readonly',False)],'claim':[('readonly',False)]},default=_get_planned_date)
     breakdown = fields.Boolean('Breakdown', readonly=True, states={'draft': [('readonly', False)]}, default=False)
     create_uid = fields.Many2one('res.users', 'Responsible')
 
@@ -391,7 +409,7 @@ class mro_request(models.Model):
         value = {'state': 'claim'}
         for request in self:
             if request.breakdown:
-                value['requested_date'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                value['requested_date'] = fields.Datetime.now()
             request.write(value)
 
     def action_confirm(self):
@@ -413,15 +431,15 @@ class mro_request(models.Model):
         return order_id.id
 
     def action_done(self):
-        self.write({'state': 'done', 'execution_date': time.strftime('%Y-%m-%d %H:%M:%S')})
+        self.write({'state': 'done', 'execution_date': fields.Datetime.now()})
         return True
 
     def action_reject(self):
-        self.write({'state': 'reject', 'execution_date': time.strftime('%Y-%m-%d %H:%M:%S')})
+        self.write({'state': 'reject', 'execution_date': fields.Datetime.now()})
         return True
 
     def action_cancel(self):
-        self.write({'state': 'cancel', 'execution_date': time.strftime('%Y-%m-%d %H:%M:%S')})
+        self.write({'state': 'cancel', 'execution_date': fields.Datetime.now()})
         return True
 
     @api.model

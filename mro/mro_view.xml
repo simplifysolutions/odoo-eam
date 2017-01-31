@@ -165,18 +165,19 @@
                     <sheet>
                         <div class="oe_title">
                             <h1>Maintenance Order <field name="name" class="oe_inline" readonly="1"/></h1>
-                        </div>
-                        <group>
+                            <h3><field name="asset_id"/></h3>
+                        <group colspan="4" col="6">
                             <group>
-                                <field name="asset_id"/>
                                 <field name="category_ids" invisible="1"/>
-                                <field name="maintenance_type"/>
                                 <label for="task_id" attrs="{'invisible':[('maintenance_type','=','bm')]}"/>
+                                <field name="maintenance_type"/>
+                            </group>
+                            <group>
                                 <div attrs="{'invisible':[('maintenance_type','=','bm')]}">
                                     <field name="task_id" domain="[('category_id','in',category_ids[0][2]),('maintenance_type','=',maintenance_type)]" attrs="{'required':[('maintenance_type','!=','bm')]}"/>
                                 </div>
                                 <field name="description"/>
-                            </group>
+                            <group>
                             <group>
                                 <field name="date_planned"/>
                                 <field name="date_scheduled"/>
@@ -242,8 +243,11 @@
                     <field name="maintenance_type"/>
                     <field name="asset_id"/>
                     <field name="category_ids"/>
-                    <filter icon="terp-mail-message-new" string="Unread Messages" name="message_unread" domain="[('message_unread','=',True)]"/>
-                    <separator/>
+                    <filter string="Scheduled Day" context="{'group_by':'date_scheduled:day'}" help="Create Week"/>
+                    <filter string="Scheduled Week" context="{'group_by':'date_scheduled:week'}" help="Create Week"/>
+                    <filter string="Scheduled Month" context="{'group_by':'date_scheduled:month'}" help="Create Week"/>
+                    <filter string="In Progress" name="open" domain="[('state','in',['open','released','assigned'])]"/>
+                    <filter string="Unassigned" name="unassigned" domain="[('state','in',['draft''])]"/>
                     <group expand="0" string="Group By">
                       <filter name="group_state"
                               string="State"
