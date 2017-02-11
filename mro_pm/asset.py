@@ -14,6 +14,7 @@ class asset_asset(models.Model):
 
     meter_ids = fields.One2many('mro.pm.meter', 'asset_id', 'Meter')
 
+    @api.multi
     def action_view_rules(self):
         category_ids = []
         for asset in self:

@@ -13,11 +13,13 @@ class asset_asset(models.Model):
     _name = 'asset.asset'
     _inherit = 'asset.asset'
 
+    @api.multi
     def _mro_count(self):
         maintenance = self.env['mro.order']
         for asset in self:
             self.mro_count = maintenance.search_count([('asset_id', '=', asset.id)])
 
+    @api.multi
     def _next_maintenance(self):
         maintenance = self.env['mro.order']
         for asset in self:
@@ -31,6 +33,7 @@ class asset_asset(models.Model):
     mro_count = fields.Integer(compute='_mro_count', string='# Maintenance')
     maintenance_date = fields.Date(compute='_next_maintenance', string='Maintenance Date')
 
+    @api.multi
     def action_view_maintenance(self):
         return {
             'domain': "[('asset_id','in',[" + ','.join(map(str, self.ids)) + "])]",

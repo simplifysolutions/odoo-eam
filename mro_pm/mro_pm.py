@@ -259,6 +259,7 @@ class mro_pm_meter(models.Model):
                 meter.value = meter.new_value
                 meter.date = new_date
 
+    @api.multi
     def activate_meter(self):
         for meter in self:
             fields = {'state': 'reading'}

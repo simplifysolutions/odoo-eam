@@ -38,9 +38,9 @@ class mro_order(models.Model):
         else: step = tmin
         return step
 
+    @api.multi
     def replan_pm(self):
         rule_obj = self.env['mro.pm.rule']
-        asset_obj = self.env['asset.asset']
         ids = rule_obj.search([])
         for rule in ids:
             tasks = [x for x in rule.pm_rules_line_ids]
@@ -48,7 +48,9 @@ class mro_order(models.Model):
             horizon = rule.horizon
             origin = rule.name
             for asset in rule.category_id.asset_ids:
+                print asset
                 for meter in asset.meter_ids:
+                    print meter
                     if meter.name != rule.parameter_id or meter.state != 'reading': continue
                     self.planning_strategy_1(asset, meter, tasks, horizon, origin)
         return True
@@ -101,7 +103,7 @@ class mro_order(models.Model):
             if Dp > Dmax[i]: Dp = Dmax[i]
         if Dp<Dn: Dp=Dn
         Cp = C + (Dp - Dc)*N
-        delta = Cp - Ci[hf]
+        # delta = Cp - Ci[hf]
         order_ids = self.search(
             [('asset_id', '=', asset.id),
             ('state', '=', 'draft'),
@@ -156,9 +158,9 @@ class mro_order(models.Model):
             Dp = Dopt[hf]
             for i in range(hf):
                 if Dp > Dmax[i]: Dp = Dmax[i]
-            Co = Cp
+            # Co = Cp
             Cp = C + (Dp - Dc)*N
-            delta = Cp - Co
+            # delta = Cp - Co
         Dhp = Dn + Hp
         while Dp < Dhp:
             Tp = time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(Dp))
@@ -208,9 +210,9 @@ class mro_order(models.Model):
             Dp = Dopt[hf]
             for i in range(hf):
                 if Dp > Dmax[i]: Dp = Dmax[i]
-            Co = Cp
+            # Co = Cp
             Cp = C + (Dp - Dc)*N
-            delta = Cp - Co
+            # delta = Cp - Co
         return True
 
 

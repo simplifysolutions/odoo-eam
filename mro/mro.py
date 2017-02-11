@@ -44,6 +44,7 @@ class mro_order(models.Model):
             return 'mro.mt_order_confirmed'
         return super(mro_order, self)._track_subtype(init_values)
 
+    @api.multi
     def _get_available_parts(self):
         for order in self:
             line_ids = []
@@ -182,6 +183,7 @@ class mro_order(models.Model):
                     })
         return True
 
+    @api.multi
     def action_confirm(self):
         for order in self:
             order.action_procure()

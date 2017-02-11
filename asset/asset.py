@@ -7,7 +7,7 @@
 ##############################################################################
 
 from openerp import api, fields, models
-from openerp import tools
+# from openerp import tools
 
 STATE_COLOR_SELECTION = [
     ('0', 'Red'),
@@ -79,20 +79,25 @@ class asset_asset(models.Model):
         search_domain += ['|', ('team','=',team)]
         search_domain += [('id', 'in', self._ids)]
         stage_ids = stage_obj._search(search_domain, order=order, access_rights_uid=access_rights_uid)
-        result = stage_obj.name_get(access_rights_uid, stage_ids)
+        result = [stage.name_get()[0] for stage in stage_obj.browse(stage_ids)]
+        # stage_obj.name_get(access_rights_uid, stage_ids)
         # restore order of the search
         result.sort(lambda x,y: cmp(stage_ids.index(x[0]), stage_ids.index(y[0])))
         return result, {}    
 
+    @api.multi
     def _read_group_finance_state_ids(self, domain, read_group_order=None, access_rights_uid=None):
         return self._read_group_state_ids(domain, read_group_order, access_rights_uid, '0')
 
+    @api.multi
     def _read_group_warehouse_state_ids(self, domain, read_group_order=None, access_rights_uid=None):
         return self._read_group_state_ids(domain, read_group_order, access_rights_uid, '1')
 
+    @api.multi
     def _read_group_manufacture_state_ids(self, domain, read_group_order=None, access_rights_uid=None):
         return self._read_group_state_ids(domain, read_group_order, access_rights_uid, '2')
 
+    @api.multi
     def _read_group_maintenance_state_ids(self, domain, read_group_order=None, access_rights_uid=None):
         return self._read_group_state_ids(domain, read_group_order, access_rights_uid, '3')
 
