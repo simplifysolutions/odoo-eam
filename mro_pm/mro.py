@@ -48,9 +48,7 @@ class mro_order(models.Model):
             horizon = rule.horizon
             origin = rule.name
             for asset in rule.category_id.asset_ids:
-                print asset
                 for meter in asset.meter_ids:
-                    print meter
                     if meter.name != rule.parameter_id or meter.state != 'reading': continue
                     self.planning_strategy_1(asset, meter, tasks, horizon, origin)
         return True
