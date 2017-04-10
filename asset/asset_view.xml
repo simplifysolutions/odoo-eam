@@ -54,6 +54,7 @@
                         </group>
                         <group>
                             <group>
+                                <field name="parent_id"/>
                                 <field name="criticality"/>
                                 <field name="user_id"/>
                             </group>
@@ -137,7 +138,7 @@
                 </kanban>
             </field>
         </record>
-        
+
         <!-- Asset Search  -->
         <record model="ir.ui.view" id="assets_search">
             <field name="name">Asset Search</field>
@@ -162,6 +163,22 @@
                               />
                     </group>
                 </search>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="asset_asset_hierarchy_tree">
+            <field name="name">asset.asset.hierarchy</field>
+            <field name="model">asset.asset</field>
+            <field name="field_parent">child_ids</field>
+            <field name="arch" type="xml">
+                <tree string="Assets">
+                    <field name="asset_number"/>
+                    <field name="name"/>
+                    <field name="category_ids"/>
+                    <field name="property_stock_asset"/>
+                    <field name="criticality"/>
+                    <field name="user_id"/>
+                </tree>
             </field>
         </record>
 
@@ -195,13 +212,30 @@
             <field name="act_window_id" ref="action_assets"/>
         </record>
 
+        <record model="ir.actions.act_window" id="action_account_asset_asset_tree">
+            <field name="name">Asset Hierarchy</field>
+            <field name="res_model">asset.asset</field>
+            <field name="view_type">tree</field>
+            <field name="domain">[('parent_id','=',False)]</field>
+            <field name="view_id" ref="asset_asset_hierarchy_tree"/>
+        </record>
+
+
         <!-- Asset item -->
         <menuitem name="Assets"
             action="action_assets"
             id="menu_maintenance_assets_assets"
             parent="menu_maintenance_assets"
             groups="asset.group_mro_customer"
-            sequence="100"/>
+            sequence="90"/>
+
+        <menuitem name="Asset Hierarchy"
+            id="menu_maintenance_assets_hierarchy"
+            parent="menu_maintenance_assets"
+            action="action_account_asset_asset_tree"
+            groups="asset.group_mro_customer"
+            sequence="100"
+            />
 
         <!-- Management Asset Kanban View  -->
         <record model="ir.ui.view" id="management_assets_kanban_view">

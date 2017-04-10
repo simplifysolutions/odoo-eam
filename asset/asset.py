@@ -134,6 +134,8 @@ class asset_asset(models.Model):
     image_small = fields.Binary("Small-sized image")
     image_medium = fields.Binary("Medium-sized image")
     category_ids = fields.Many2many('asset.category', column1='asset_id', column2='category_id', string='Tags')
+    parent_id = fields.Many2one('asset.asset', 'Parent Asset')
+    child_ids = fields.One2many('asset.asset','parent_id','Child Assets')
 
     _group_by_full = {
         'finance_state_id': _read_group_finance_state_ids,
