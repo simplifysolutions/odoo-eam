@@ -17,7 +17,7 @@ class asset_asset(models.Model):
     def _mro_count(self):
         maintenance = self.env['mro.order']
         for asset in self:
-            self.mro_count = maintenance.search_count([('asset_id', '=', asset.id)])
+            asset.mro_count = maintenance.search_count([('asset_id', '=', asset.id)])
 
     @api.multi
     def _next_maintenance(self):
