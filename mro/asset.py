@@ -28,7 +28,7 @@ class asset_asset(models.Model):
                 ('state', 'not in', ('done','cancel'))],
                 limit=1, order='date_execution')
             if len(order_ids) > 0:
-                self.maintenance_date = order_ids[0].date_execution
+                asset.maintenance_date = order_ids[0].date_execution
 
     mro_count = fields.Integer(compute='_mro_count', string='# Maintenance')
     maintenance_date = fields.Date(compute='_next_maintenance', string='Maintenance Date')
